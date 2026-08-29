@@ -203,8 +203,9 @@ config dialog can no longer write to them.
 
 On macOS a `Logsmith.app` bundle is also installed under `~/Applications/Home Manager Apps`
 so the app appears in Finder and Spotlight. Launching it via `open -a Logsmith` suppresses
-the Dock icon (`LSUIElement = 1`). The `autostart` LaunchAgent runs `logsmith` directly for
-reliable process management.
+the Dock icon (`LSUIElement = 1`). Before Home Manager links the bundle, launch it by path
+with `open ./result/Applications/Logsmith.app`. The `autostart` LaunchAgent uses `open -n -W`
+so Launch Services applies the bundle metadata while launchd tracks its lifetime.
 
 ## Configuration
 

@@ -175,19 +175,20 @@ in
     # ── macOS: LaunchAgent (gui domain = graphical session) ──────────────────
     launchd.agents.logsmith = lib.mkIf (cfg.autostart && pkgs.stdenv.isDarwin) {
       enable = true;
+      domain = "gui";
       config = {
         Label = "de.otto.logsmith";
-        # Run inside a shell so that $PATH is extended rather than replaced,
-        # mirroring the Linux systemd service approach.
+        # Launch through Launch Services so macOS applies the app bundle's
+        # LSUIElement setting. `-W` keeps launchd attached to the app lifetime.
         ProgramArguments = [
-          "${pkgs.runtimeShell}"
-          "-c"
-          "PATH=${servicePath}:$PATH exec ${cfg.package}/bin/logsmith"
+          "/usr/bin/open"
+          "-n"
+          "-W"
+          "${cfg.package}/Applications/Logsmith.app"
         ];
+        EnvironmentVariables.PATH = "${servicePath}:/usr/bin:/bin:/usr/sbin:/sbin";
         RunAtLoad = true;
-        KeepAlive = true;
-        StandardOutPath = "${config.home.homeDirectory}/.logsmith/launchd.stdout.log";
-        StandardErrorPath = "${config.home.homeDirectory}/.logsmith/launchd.stderr.log";
+        KeepAlive.SuccessfulExit = false;
       };
     };
   };

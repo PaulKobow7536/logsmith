@@ -4,8 +4,8 @@
 # On macOS an additional Logsmith.app bundle is installed under
 # $out/Applications so the app appears in Finder and Spotlight.  The bundle's
 # Info.plist sets LSUIElement=1 so the process never shows a Dock icon when
-# launched from the bundle (e.g. via `open -a Logsmith`).  The LaunchAgent
-# autostart uses $out/bin/logsmith directly for reliable process management.
+# launched from the bundle. The LaunchAgent uses `open -n -W` so Launch
+# Services applies the bundle metadata while launchd tracks its lifetime.
 {
   pkgs,
   pythonEnv,
@@ -32,8 +32,18 @@ let
       <string>de.otto.logsmith</string>
       <key>CFBundleName</key>
       <string>Logsmith</string>
+      <key>CFBundleDisplayName</key>
+      <string>Logsmith</string>
+      <key>CFBundleExecutable</key>
+      <string>logsmith</string>
+      <key>CFBundlePackageType</key>
+      <string>APPL</string>
+      <key>CFBundleShortVersionString</key>
+      <string>${version}</string>
+      <key>CFBundleVersion</key>
+      <string>${version}</string>
       <key>CFBundleIconFile</key>
-      <string>AppIcon</string>
+      <string>AppIcon.icns</string>
       <key>LSUIElement</key>
       <true/>
       <key>NSHighResolutionCapable</key>
@@ -73,4 +83,12 @@ pkgs.stdenv.mkDerivation {
 
     runHook postInstall
   '';
+
+  meta = {
+    description = "Tray application for assuming AWS roles and managing GCP configuration";
+    homepage = "https://github.com/otto-de/logsmith";
+    license = lib.licenses.asl20;
+    mainProgram = "logsmith";
+    platforms = lib.platforms.linux ++ lib.platforms.darwin;
+  };
 }

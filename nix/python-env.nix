@@ -78,8 +78,13 @@ pkgs.symlinkJoin {
   postBuild = ''
     wrapProgram $out/bin/python \
       --set QT_PLUGIN_PATH "${bundledQt}/plugins" \
-      --set QML_IMPORT_PATH "${bundledQt}/qml"${
-      lib.optionalString pkgs.stdenv.isLinux '' \
-      --prefix LD_LIBRARY_PATH : "${bundledQt}/lib:${lib.makeLibraryPath qtSystemLibs}"''}
+      --set QML_IMPORT_PATH "${bundledQt}/qml" \
+      ${
+        if pkgs.stdenv.isDarwin then
+          ''--prefix DYLD_FRAMEWORK_PATH : "${bundledQt}/lib" \
+      --prefix DYLD_LIBRARY_PATH : "${bundledQt}/lib"''
+        else
+          ''--prefix LD_LIBRARY_PATH : "${bundledQt}/lib:${lib.makeLibraryPath qtSystemLibs}"''
+      }
   '';
 }
