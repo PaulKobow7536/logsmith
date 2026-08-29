@@ -21,12 +21,21 @@ static int prepend_env(const char *name, const char *value)
     return result;
 }
 
+static int prepend_sys_path(const char *path)
+{
+    PyObject *python_path = PyUnicode_FromString(path);
+    if (python_path == NULL)
+        return -1;
+
+    int result = PyList_Insert(PySys_GetObject("path"), 0, python_path);
+    Py_DECREF(python_path);
+    return result;
+}
+
 int main(int argc, char **argv)
 {
-    if (setenv("PYTHONHOME", "@pythonHome@", 1) != 0 ||
-        setenv("QT_PLUGIN_PATH", "@qtPluginPath@", 1) != 0 ||
+    if (setenv("QT_PLUGIN_PATH", "@qtPluginPath@", 1) != 0 ||
         setenv("QML_IMPORT_PATH", "@qmlImportPath@", 1) != 0 ||
-        prepend_env("PYTHONPATH", "@pythonPath@") != 0 ||
         prepend_env("PATH", "@runtimePath@") != 0) {
         perror("Logsmith: could not configure the runtime environment");
         return 1;
@@ -43,7 +52,24 @@ int main(int argc, char **argv)
     for (int i = 1; i < argc; ++i)
         python_argv[i + 1] = argv[i];
 
-    int result = Py_BytesMain(argc + 1, python_argv);
+    PyConfig config;
+    PyConfig_InitPythonConfig(&config);
+    PyStatus status = PyConfig_SetBytesString(&config, &config.home, "@pythonHome@");
+    if (!PyStatus_Exception(status))
+        status = PyConfig_SetBytesArgv(&config, argc + 1, python_argv);
+    if (!PyStatus_Exception(status))
+        status = Py_InitializeFromConfig(&config);
+    PyConfig_Clear(&config);
     free(python_argv);
-    return result;
+
+    if (PyStatus_Exception(status))
+        Py_ExitStatusException(status);
+
+    if (prepend_sys_path("@pythonSitePackages@") != 0 ||
+        prepend_sys_path("@appPath@") != 0) {
+        PyErr_Print();
+        return 1;
+    }
+
+    return Py_RunMain();
 }

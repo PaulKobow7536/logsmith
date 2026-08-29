@@ -85,7 +85,8 @@ pkgs.stdenv.mkDerivation {
         --replace-fail '@pythonHome@' '${python}' \
         --replace-fail '@qtPluginPath@' '${bundledQt}/plugins' \
         --replace-fail '@qmlImportPath@' '${bundledQt}/qml' \
-        --replace-fail '@pythonPath@' "$out/share/logsmith:${pythonEnv}/${python.sitePackages}" \
+        --replace-fail '@pythonSitePackages@' '${pythonEnv}/${python.sitePackages}' \
+        --replace-fail '@appPath@' "$out/share/logsmith" \
         --replace-fail '@runtimePath@' '${runtimePath}' \
         --replace-fail '@scriptPath@' "$out/share/logsmith/app/run.py"
       $CC launcher.c -o $app/MacOS/logsmith \
