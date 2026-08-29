@@ -20,7 +20,9 @@ let
   # The PyQt6 wheels bundle their own Qt build, so nixpkgs' Qt must never end up
   # on the library path - mixing the two causes symbol lookup errors. Only the
   # plain system libraries the bundled Qt links against are needed.
-  qtSystemLibs = with pkgs; [
+  # On macOS the wheels are self-contained and link via @rpath, so no extra libs
+  # are required at runtime.
+  qtSystemLibs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [
     dbus
     expat
     fontconfig
@@ -39,7 +41,7 @@ let
     xcbutilwm
     zlib
     zstd
-  ];
+  ]);
 
   # The prebuilt PyQt6 binaries link against Qt libraries shipped in the
   # separate pyqt6-qt6 wheel, which autoPatchelf cannot see at build time.
@@ -76,7 +78,8 @@ pkgs.symlinkJoin {
   postBuild = ''
     wrapProgram $out/bin/python \
       --set QT_PLUGIN_PATH "${bundledQt}/plugins" \
-      --set QML_IMPORT_PATH "${bundledQt}/qml" \
-      --prefix LD_LIBRARY_PATH : "${bundledQt}/lib:${lib.makeLibraryPath qtSystemLibs}"
+      --set QML_IMPORT_PATH "${bundledQt}/qml"${
+      lib.optionalString pkgs.stdenv.isLinux '' \
+      --prefix LD_LIBRARY_PATH : "${bundledQt}/lib:${lib.makeLibraryPath qtSystemLibs}"''}
   '';
 }

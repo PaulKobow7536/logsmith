@@ -139,20 +139,20 @@ The flake exposes `packages.default` and a home-manager module as `homeManagerMo
 
 ```nix
 {
-  inputs.logsmith.url = "github:redvox/logsmith";
+  inputs.logsmith.url = "github:otto-de/logsmith";
 
   # in your home-manager configuration
   imports = [ inputs.logsmith.homeManagerModules.logsmith ];
 
   programs.logsmith = {
     enable = true;
-    autostart = true; # run as a systemd user service in the graphical session
+    autostart = true; # systemd user service (Linux) or LaunchAgent (macOS)
   };
 }
 ```
 
 The aws cli and the google cloud sdk are installed along with logsmith. The service is
-started by systemd and not by an interactive shell, so tools that are only on the PATH
+started by the init system and not by an interactive shell, so tools that are only on the PATH
 via `~/.zshrc` or `~/.bashrc` are neither found by logsmith nor by the post login
 scripts of a profile group. Use `extraPackages` and `extraPaths` for those:
 
@@ -200,6 +200,11 @@ programs.logsmith = {
 
 Note that these files then become read-only symlinks into the nix store, so the in-app
 config dialog can no longer write to them.
+
+On macOS a `Logsmith.app` bundle is also installed under `~/Applications/Home Manager Apps`
+so the app appears in Finder and Spotlight. Launching it via `open -a Logsmith` suppresses
+the Dock icon (`LSUIElement = 1`). The `autostart` LaunchAgent runs `logsmith` directly for
+reliable process management.
 
 ## Configuration
 
