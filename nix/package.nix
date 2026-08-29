@@ -8,12 +8,16 @@
 # Services applies the bundle metadata while launchd tracks its lifetime.
 {
   pkgs,
+  python,
   pythonEnv,
   runtimeTools,
   src,
 }:
 let
   inherit (pkgs) lib;
+
+  runtimePath = lib.makeBinPath runtimeTools;
+  bundledQt = "${pythonEnv}/${python.sitePackages}/PyQt6/Qt6";
 
   # Single source of truth for the version is app/version.py.
   version = lib.head (
@@ -67,16 +71,28 @@ pkgs.stdenv.mkDerivation {
     makeWrapper ${pythonEnv}/bin/python $out/bin/logsmith \
       --add-flags $out/share/logsmith/app/run.py \
       --prefix PYTHONPATH : $out/share/logsmith \
-      --prefix PATH : ${lib.makeBinPath runtimeTools}
+      --prefix PATH : ${runtimePath}
 
     ${lib.optionalString pkgs.stdenv.isDarwin ''
       # Install a proper .app bundle for Finder / Spotlight discoverability.
       # The bundle sets LSUIElement=1 so launching via `open -a Logsmith` never
-      # shows a Dock icon.  The macOS binary inside the bundle is a symlink to
-      # $out/bin/logsmith so both entry-points stay in sync.
+      # shows a Dock icon. macOS 26 requires the status item to be owned by the
+      # original application process, so the bundle uses a native launcher that
+      # embeds Python rather than a shell wrapper that replaces itself.
       app=$out/Applications/Logsmith.app/Contents
       mkdir -p $app/MacOS $app/Resources
-      ln -s $out/bin/logsmith $app/MacOS/logsmith
+      substitute ${./macos-launcher.c} launcher.c \
+        --replace-fail '@pythonHome@' '${python}' \
+        --replace-fail '@qtPluginPath@' '${bundledQt}/plugins' \
+        --replace-fail '@qmlImportPath@' '${bundledQt}/qml' \
+        --replace-fail '@pythonPath@' "$out/share/logsmith:${pythonEnv}/${python.sitePackages}" \
+        --replace-fail '@runtimePath@' '${runtimePath}' \
+        --replace-fail '@scriptPath@' "$out/share/logsmith/app/run.py"
+      $CC launcher.c -o $app/MacOS/logsmith \
+        -I${python}/include/python${python.pythonVersion} \
+        -L${python}/lib -lpython${python.pythonVersion} \
+        -Wl,-rpath,${python}/lib \
+        -Wl,-rpath,${bundledQt}/lib
       cp ${infoPlist} $app/Info.plist
       cp $out/share/logsmith/app/assets/app_icon.icns $app/Resources/AppIcon.icns
     ''}

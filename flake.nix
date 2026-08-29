@@ -56,6 +56,8 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
+          python = pkgs.python313;
+
           pythonEnv = import ./nix/python-env.nix {
             inherit
               pkgs
@@ -63,13 +65,13 @@
               pyproject-nix
               pyproject-build-systems
               ;
-            python = pkgs.python313;
+            inherit python;
             workspaceRoot = ./.;
           };
         in
         {
           packages.default = import ./nix/package.nix {
-            inherit pkgs pythonEnv;
+            inherit pkgs python pythonEnv;
             src = ./.;
             runtimeTools = runtimeTools pkgs;
           };
