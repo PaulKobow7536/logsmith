@@ -19,6 +19,16 @@ Release dates will be in YYYY-MM-DD format.
 
 ## Unreleased
 
+### Added
+- Nix flake: `packages.default` for Linux (x86\_64, aarch64) and macOS
+  (Apple Silicon), built from the locked PyPI wheels in `uv.lock` via uv2nix.
+- Nix flake: home-manager module (`homeManagerModules.logsmith`) with
+  declarative `settings`, `accounts`, `extraPackages`, `extraPaths`, and
+  `autostart` (systemd user service on Linux; LaunchAgent on macOS).
+- macOS: `Logsmith.app` bundle installed under `$out/Applications` for
+  Finder and Spotlight discoverability (`LSUIElement = 1` suppresses the Dock
+  icon when launched via `open -a Logsmith`).
+
 ## 11.0.2 - 2026-06-26
 
 ### Fixed

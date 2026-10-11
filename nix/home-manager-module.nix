@@ -1,5 +1,6 @@
 # home-manager module: installs logsmith, optionally writes its configuration
-# files and autostarts it as a systemd user service.
+# files and autostarts it as a systemd user service (Linux) or a LaunchAgent
+# (macOS).
 #
 # System independent on purpose - `pkgs` is the one of the importing
 # home-manager configuration, `self` is only used to look up the default
@@ -51,7 +52,15 @@ in
     autostart = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Start logsmith as a systemd user service with the graphical session.";
+      description = ''
+        Autostart logsmith with the desktop session.
+
+        On Linux this creates a systemd user service that starts with
+        `graphical-session.target`.
+
+        On macOS this creates a LaunchAgent in the `gui` domain so it starts
+        when the user logs into Aqua (the graphical session).
+      '';
     };
 
     extraPackages = lib.mkOption {
@@ -76,9 +85,9 @@ in
       description = ''
         Additional directories that are prepended to the PATH of the service.
 
-        The service is started by systemd and not by an interactive shell, so
-        directories that are added in `~/.zshrc` or `~/.bashrc` are neither
-        visible to logsmith nor to the post login scripts.
+        The service is started by the init system and not by an interactive
+        shell, so directories that are added in `~/.zshrc` or `~/.bashrc` are
+        neither visible to logsmith nor to the post login scripts.
       '';
     };
 
@@ -137,7 +146,8 @@ in
       (declarativeFile "accounts.yaml" cfg.accounts)
     ];
 
-    systemd.user.services.logsmith = lib.mkIf cfg.autostart {
+    # ── Linux: systemd user service ──────────────────────────────────────────
+    systemd.user.services.logsmith = lib.mkIf (cfg.autostart && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "logsmith aws login helper";
         # Needs both a tray to dock into and network access to reach AWS.
@@ -160,6 +170,26 @@ in
         RestartSec = "5s";
       };
       Install.WantedBy = [ "graphical-session.target" ];
+    };
+
+    # ── macOS: LaunchAgent (gui domain = graphical session) ──────────────────
+    launchd.agents.logsmith = lib.mkIf (cfg.autostart && pkgs.stdenv.hostPlatform.isDarwin) {
+      enable = true;
+      domain = "gui";
+      config = {
+        Label = "de.otto.logsmith";
+        # Launch through Launch Services so macOS applies the app bundle's
+        # LSUIElement setting. `-W` keeps launchd attached to the app lifetime.
+        ProgramArguments = [
+          "/usr/bin/open"
+          "-n"
+          "-W"
+          "${cfg.package}/Applications/Logsmith.app"
+        ];
+        EnvironmentVariables.PATH = "${servicePath}:/usr/bin:/bin:/usr/sbin:/sbin";
+        RunAtLoad = true;
+        KeepAlive.SuccessfulExit = false;
+      };
     };
   };
 }
