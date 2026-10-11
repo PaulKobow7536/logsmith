@@ -73,7 +73,7 @@ pkgs.stdenv.mkDerivation {
       --prefix PYTHONPATH : $out/share/logsmith \
       --prefix PATH : ${runtimePath}
 
-    ${lib.optionalString pkgs.stdenv.isDarwin ''
+    ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
       # Install a proper .app bundle for Finder / Spotlight discoverability.
       # The bundle sets LSUIElement=1 so launching via `open -a Logsmith` never
       # shows a Dock icon. macOS 26 requires the status item to be owned by the

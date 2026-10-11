@@ -147,7 +147,7 @@ in
     ];
 
     # ── Linux: systemd user service ──────────────────────────────────────────
-    systemd.user.services.logsmith = lib.mkIf (cfg.autostart && pkgs.stdenv.isLinux) {
+    systemd.user.services.logsmith = lib.mkIf (cfg.autostart && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "logsmith aws login helper";
         # Needs both a tray to dock into and network access to reach AWS.
@@ -173,7 +173,7 @@ in
     };
 
     # ── macOS: LaunchAgent (gui domain = graphical session) ──────────────────
-    launchd.agents.logsmith = lib.mkIf (cfg.autostart && pkgs.stdenv.isDarwin) {
+    launchd.agents.logsmith = lib.mkIf (cfg.autostart && pkgs.stdenv.hostPlatform.isDarwin) {
       enable = true;
       domain = "gui";
       config = {

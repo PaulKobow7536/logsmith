@@ -22,7 +22,7 @@ let
   # plain system libraries the bundled Qt links against are needed.
   # On macOS the wheels are self-contained and link via @rpath, so no extra libs
   # are required at runtime.
-  qtSystemLibs = lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+  qtSystemLibs = lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
     dbus
     expat
     fontconfig
@@ -80,7 +80,7 @@ pkgs.symlinkJoin {
       --set QT_PLUGIN_PATH "${bundledQt}/plugins" \
       --set QML_IMPORT_PATH "${bundledQt}/qml" \
       ${
-        if pkgs.stdenv.isDarwin then
+        if pkgs.stdenv.hostPlatform.isDarwin then
           ''--prefix DYLD_FRAMEWORK_PATH : "${bundledQt}/lib" \
       --prefix DYLD_LIBRARY_PATH : "${bundledQt}/lib"''
         else
